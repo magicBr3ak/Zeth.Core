@@ -1,0 +1,2 @@
+# Zeth.Core
+.NET Libraries
