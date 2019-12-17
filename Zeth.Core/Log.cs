@@ -83,12 +83,10 @@ namespace Zeth.Core
             }).
             Save("OBJECT");
         }
-        public static string SaveException(this Exception ex, string user = "", string step = "")
+        public static string SaveException(this Exception ex)
         {
             var logObject = new
             {
-                USER = user,
-                STEP = step,
                 EX_MESSAGE = ex.Message,
                 EX_SOURCE = ex.Source,
                 EX_STACKTRACE = ex.StackTrace
