@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -7,83 +6,122 @@ namespace Zeth.Core
 {
     public static class CryptoData
     {
-        internal static readonly byte[] SHA256_SALT_BYTES = new byte[] { 231, 123, 213, 189, 145, 64, 34, 99 };
+        public static byte[] DES_KEY = Encoding.UTF8.GetBytes("asdasd");
+        public static byte[] SHA256_KEY = Encoding.UTF8.GetBytes("asdasd");
+        public static byte[] SHA256_SALT = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-        public static byte[] SHA256Encrypt(byte[] dataBytes, byte[] keyBytes)
+        public static byte[] EncryptTripleDES(byte[] dataValue)
         {
-            var encryptedBytes = default(byte[]);
+            var cryptoMD5 = new MD5CryptoServiceProvider();
+            var dataKey = cryptoMD5.ComputeHash(DES_KEY);
+            var cryptoTDES = new TripleDESCryptoServiceProvider();
+            var dataResult = default(byte[]);
 
-            using (MemoryStream ms = new MemoryStream())
+            cryptoMD5.Clear();
+
+            cryptoTDES.Key = dataKey;
+            cryptoTDES.Mode = CipherMode.ECB;
+            cryptoTDES.Padding = PaddingMode.PKCS7;
+
+            dataResult = cryptoTDES.CreateEncryptor().TransformFinalBlock(dataValue, 0, dataValue.Length);
+
+            cryptoTDES.Clear();
+
+            return dataResult;
+        }
+        public static byte[] DecryptTripleDES(byte[] dataValue)
+        {
+            var cryptoMD5 = new MD5CryptoServiceProvider();
+            var dataKey = cryptoMD5.ComputeHash(DES_KEY);
+            var cryptoTDES = new TripleDESCryptoServiceProvider();
+            var dataResult = default(byte[]);
+
+            cryptoMD5.Clear();
+
+            cryptoTDES.Key = dataKey;
+            cryptoTDES.Mode = CipherMode.ECB;
+            cryptoTDES.Padding = PaddingMode.PKCS7;
+
+            dataResult = cryptoTDES.CreateDecryptor().TransformFinalBlock(dataValue, 0, dataValue.Length);
+
+            cryptoTDES.Clear();
+
+            return dataResult;
+        }    
+        public static string EncryptTripleDES(string dataValue)
+        {
+            return Encoding.UTF8.GetString(EncryptTripleDES(Encoding.UTF8.GetBytes(dataValue)));
+        }
+        public static string DecryptTripleDES(string dataValue)
+        {
+            return Encoding.UTF8.GetString(DecryptTripleDES(Encoding.UTF8.GetBytes(dataValue)));
+        }
+    
+        public static byte[] EncryptSHA256(byte[] dataValue)
+        {
+            var key = default(Rfc2898DeriveBytes);
+            var dataResult = default(byte[]);
+
+            using (var stream = new MemoryStream())
             {
-                using (RijndaelManaged AES = new RijndaelManaged())
+                using (var aes = new RijndaelManaged())
                 {
-                    var rfcKey = new Rfc2898DeriveBytes(keyBytes, SHA256_SALT_BYTES, 1000);
+                    key = new Rfc2898DeriveBytes(SHA256_KEY, SHA256_SALT, 1000);
 
-                    AES.KeySize = 256;
-                    AES.BlockSize = 128;
-                    AES.Key = rfcKey.GetBytes(AES.KeySize / 8);
-                    AES.IV = rfcKey.GetBytes(AES.BlockSize / 8);
+                    aes.KeySize = 256;
+                    aes.BlockSize = 128;
+                    aes.Key = key.GetBytes(aes.KeySize / 8);
+                    aes.IV = key.GetBytes(aes.BlockSize / 8);
+                    aes.Mode = CipherMode.CBC;
 
-                    AES.Mode = CipherMode.CBC;
-
-                    using (var cs = new CryptoStream(ms, AES.CreateEncryptor(), CryptoStreamMode.Write))
+                    using (var cryptoStream = new CryptoStream(stream, aes.CreateEncryptor(), CryptoStreamMode.Write))
                     {
-                        cs.Write(dataBytes, 0, dataBytes.Length);
-                        cs.Close();
+                        cryptoStream.Write(dataValue, 0, dataValue.Length);
+                        cryptoStream.Close();
                     }
 
-                    encryptedBytes = ms.ToArray();
+                    dataResult = stream.ToArray();
                 }
             }
 
-            return encryptedBytes;
+            return dataResult;
         }
-        public static string SHA256Encrypt(this string text, string key)
+        public static byte[] DecryptSHA256(byte[] dataValue)
         {
-            var dataBytes = Encoding.UTF8.GetBytes(text);
-            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var key = default(Rfc2898DeriveBytes);
+            var dataResult = default(byte[]);
 
-            keyBytes = SHA256.Create().ComputeHash(keyBytes);
-
-            return Convert.ToBase64String(SHA256Encrypt(dataBytes, keyBytes));
-        }
-
-        public static byte[] SHA256Decrypt(byte[] dataBytes, byte[] keyBytes)
-        {
-            byte[] decryptedBytes = null;
-
-            using (MemoryStream ms = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
-                using (RijndaelManaged AES = new RijndaelManaged())
+                using (var aes = new RijndaelManaged())
                 {
-                    var key = new Rfc2898DeriveBytes(keyBytes, SHA256_SALT_BYTES, 1000);
+                    key = new Rfc2898DeriveBytes(SHA256_KEY, SHA256_SALT, 1000);
 
-                    AES.KeySize = 256;
-                    AES.BlockSize = 128;
-                    AES.Key = key.GetBytes(AES.KeySize / 8);
-                    AES.IV = key.GetBytes(AES.BlockSize / 8);
-                    AES.Mode = CipherMode.CBC;
+                    aes.KeySize = 256;
+                    aes.BlockSize = 128;
+                    aes.Key = key.GetBytes(aes.KeySize / 8);
+                    aes.IV = key.GetBytes(aes.BlockSize / 8);
+                    aes.Mode = CipherMode.CBC;
 
-                    using (var cs = new CryptoStream(ms, AES.CreateDecryptor(), CryptoStreamMode.Write))
+                    using (var cryptoStream = new CryptoStream(stream, aes.CreateDecryptor(), CryptoStreamMode.Write))
                     {
-                        cs.Write(dataBytes, 0, dataBytes.Length);
-                        cs.Close();
+                        cryptoStream.Write(dataValue, 0, dataValue.Length);
+                        cryptoStream.Close();
                     }
 
-                    decryptedBytes = ms.ToArray();
+                    dataResult = stream.ToArray();
                 }
             }
 
-            return decryptedBytes;
+            return dataResult;
         }
-        public static string SHA256Decrypt(this string text, string key)
+        public static string EncryptSHA256(string dataValue)
         {
-            var dataBytes = Convert.FromBase64String(text);
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-
-            keyBytes = SHA256.Create().ComputeHash(keyBytes);
-
-            return Encoding.UTF8.GetString(SHA256Decrypt(dataBytes, keyBytes));
+            return Encoding.UTF8.GetString(EncryptSHA256(Encoding.UTF8.GetBytes(dataValue)));
+        }
+        public static string DecryptSHA256(string dataValue)
+        {
+            return Encoding.UTF8.GetString(DecryptSHA256(Encoding.UTF8.GetBytes(dataValue)));
         }
     }
 }

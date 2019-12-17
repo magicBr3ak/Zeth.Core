@@ -1,0 +1,16 @@
+﻿[*.{cs,vb}]
+
+# IDE0032: Usar propiedad automática
+dotnet_style_prefer_auto_properties = true:none
+
+# IDE0059: Asignación innecesaria de un valor
+csharp_style_unused_value_assignment_preference = discard_variable:none
+
+# IDE0008: Usar un tipo explícito
+csharp_style_var_elsewhere = false:none
+
+# IDE0008: Usar un tipo explícito
+csharp_style_var_when_type_is_apparent = false:none
+
+# IDE0008: Usar un tipo explícito
+csharp_style_var_for_built_in_types = false:none

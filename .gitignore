@@ -6,3 +6,6 @@ Zeth.Core.WPF/bin/
 Zeth.Core.WPF/obj/
 Zeth.Core/bin/
 Zeth.Core/obj/
+packages/
+Zeth.Core.Web/bin/
+Zeth.Core.Web/obj/
